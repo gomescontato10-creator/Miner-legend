@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MINER LEGEND: FAST GOLD</title>
+    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <style>
+        :root { --bg: #050508; --p: #12121a; --gold: #ffcc00; --acc: #00ff88; --hp: #ff4444; }
+        * { box-sizing: border-box; font-family: 'Arial', sans-serif; color: #fff; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* AUTH */
+        #auth { position: fixed; inset: 0; background: #000; z-index: 999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .in-auth { background: #111; border: 1px solid #333; padding: 12px; border-radius: 8px; margin: 5px; width: 260px; }
+
+        /* TOP */
+        header { background: var(--p); padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-bottom: 2px solid #333; }
+        .stat { background: #000; padding: 8px; border-radius: 8px; text-align: center; border: 1px solid #222; }
+        .stat b { color: var(--gold); font-size: 18px; display: block; }
+
+        /* AUTO CLICKER AREA */
+        .auto-zone { background: #1a1a24; padding: 8px; display: flex; justify-content: center; align-items: center; gap: 10px; border-bottom: 1px solid #333; }
+        .switch { position: relative; width: 45px; height: 22px; }
+        .switch input { opacity: 0; width: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: #333; border-radius: 34px; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .4s; }
+        input:checked + .slider { background: var(--acc); }
+        input:checked + .slider:before { transform: translateX(23px); }
+
+        /* NAV */
+        nav { display: flex; background: #000; border-bottom: 2px solid #222; }
+        .nav-btn { flex: 1; padding: 15px 5px; text-align: center; font-size: 11px; font-weight: bold; cursor: pointer; color: #666; }
+        .nav-btn.active { color: var(--acc); border-bottom: 3px solid var(--acc); background: #111; }
+
+        /* SCROLL CONTENT */
+        .main { flex: 1; overflow-y: auto; padding-bottom: 30px; }
+        .tab { display: none; padding: 20px; flex-direction: column; align-items: center; }
+        .tab.active { display: flex; }
+
+        /* MINA */
+        .rock { width: 140px; height: 140px; background: #4e342e; border-radius: 30px; border: 4px solid #222; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 50px; box-shadow: 0 8px 0 #000; transition: 0.05s; }
+        .rock:active { transform: translateY(4px); box-shadow: 0 4px 0 #000; }
+        .hp-box { width: 100%; max-width: 280px; height: 20px; background: #000; border-radius: 10px; border: 1px solid #444; overflow: hidden; margin-top: 15px; position: relative; }
+        .hp-bar { height: 100%; background: var(--hp); transition: width 0.1s; }
+        .hp-txt { position: absolute; inset: 0; text-align: center; font-size: 12px; line-height: 18px; font-weight: bold; }
+
+        /* CARDS */
+        .card { width: 100%; max-width: 400px; background: var(--p); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; }
+        .buy-btn { background: var(--acc); color: #000; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .buy-btn:disabled { background: #333; color: #777; }
+
+        /* RANK & CHAT */
+        #chat-box { width: 100%; height: 180px; background: #000; padding: 10px; overflow-y: auto; border: 1px solid #222; border-radius: 8px; margin-bottom: 10px; font-size: 13px; }
+        .rank-box { width: 100%; background: #000; border-radius: 8px; padding: 10px; border: 1px solid #222; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="auth">
+    <h1 style="color:var(--gold)">MINER LEGEND</h1>
+    <input type="text" id="user" class="in-auth" placeholder="Nick">
+    <input type="password" id="pass" class="in-auth" placeholder="Senha">
+    <button class="buy-btn" style="width:260px; margin-top:10px;" onclick="game.login()">ENTRAR / CRIAR</button>
+</div>
+
+<header>
+    <div class="stat"><small>OURO</small><b id="u-gold">0</b></div>
+    <div class="stat"><small>DANO</small><b id="u-dmg">1</b></div>
+</header>
+
+<div class="auto-zone">
+    <span style="font-size: 11px; font-weight: bold; color: var(--acc);">AUTO CLICKER</span>
+    <label class="switch">
+        <input type="checkbox" id="auto-check" onchange="game.toggleAuto()">
+        <span class="slider"></span>
+    </label>
+</div>
+
+<nav>
+    <div class="nav-btn active" onclick="game.tab('mina', this)">MINA</div>
+    <div class="nav-btn" onclick="game.tab('loja', this)">LOJA</div>
+    <div class="nav-btn" onclick="game.tab('pets', this)">PETS</div>
+    <div class="nav-btn" onclick="game.tab('rank', this)">RANK</div>
+</nav>
+
+<div class="main">
+    <div id="mina" class="tab active">
+        <h3 id="p-name" style="margin-bottom: 5px; color: var(--acc);">Iniciante</h3>
+        <div class="rock" onclick="game.mine(true)">⛏️</div>
+        <div class="hp-box">
+            <div id="hp-bar" class="hp-bar"></div>
+            <div id="hp-txt" class="hp-txt">10 / 10</div>
+        </div>
+    </div>
+
+    <div id="loja" class="tab"><div id="pick-list" style="width:100%"></div></div>
+    <div id="pets" class="tab"><div id="pet-list" style="width:100%"></div></div>
+
+    <div id="rank" class="tab">
+        <div class="rank-box" id="rank-list">Conectando ao Ranking Global...</div>
+        <div id="chat-box"></div>
+        <div style="display: flex; gap: 5px; width: 100%;">
+            <input type="text" id="chat-in" placeholder="Chat..." style="flex:1; background:#000; border:1px solid #333; padding:10px; border-radius:5px;">
+            <button class="buy-btn" onclick="game.sendChat()">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const ABLY_KEY = 'wpgTTw.ROsKoQ:3G5iFq9cMkZppCZ4aicBOwDhAGs69lV0Egd55FIstlQ'; 
+
+const game = {
+    gold: 0, pIdx: 0, myPets: {}, curHp: 10, maxHp: 10, nick: "", pass: "",
+    suffixes: ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"],
+    picks: ["Madeira", "Pedra", "Ferro", "Aço", "Ouro", "Platina", "Esmeralda", "Diamante", "Rubi", "Obsidiana", "Mithril", "Adamantio", "Netherite", "Vibranium", "Estelar", "Solar", "Lunar", "Vazio", "Abissal", "Celestial", "Divina", "Eterna", "Infinitum", "Quantum", "Galática", "Nebulosa", "Mística", "Rúnica", "Ancestral", "Titânica", "Vulcânica", "Glacial", "Relâmpago", "Dragão", "Fênix", "Caos", "Luz", "Sombra", "Destruição", "Criação", "Realidade", "Tempo", "Espaço", "Multiverso", "Omni", "Deus", "Zênite", "Final", "Infinito", "Lendária"],
+    
+    audio: new (window.AudioContext || window.webkitAudioContext)(),
+
+    f(n) {
+        if (n < 1000) return Math.floor(n);
+        let e = Math.floor(Math.log10(n) / 3);
+        return (n / Math.pow(1000, e)).toFixed(2) + this.suffixes[e];
+    },
+
+    sound(f) {
+        let o = this.audio.createOscillator(), g = this.audio.createGain();
+        o.frequency.value = f; g.gain.setValueAtTime(0.1, this.audio.currentTime);
+        o.connect(g); g.connect(this.audio.destination);
+        o.start(); o.stop(this.audio.currentTime + 0.1);
+    },
+
+    login() {
+        this.nick = document.getElementById('user').value;
+        this.pass = document.getElementById('pass').value;
+        if(!this.nick || !this.pass) return alert("Nick/Senha!");
+        let s = JSON.parse(localStorage.getItem('save_'+this.nick));
+        if(s) {
+            if(s.pass !== this.pass) return alert("Senha Errada!");
+            this.gold=s.gold; this.pIdx=s.pIdx; this.myPets=s.myPets; this.maxHp=s.maxHp;
+        }
+        this.curHp = this.maxHp;
+        document.getElementById('auth').style.display='none';
+        this.initNet(); this.update(); this.render();
+    },
+
+    getDmg() {
+        let d = 2 * Math.pow(1.8, this.pIdx);
+        let m = 1;
+        Object.keys(this.myPets).forEach(i => m += (i * 0.5 + 1) * this.myPets[i]);
+        return d * m;
+    },
+
+    mine(manual) {
+        this.curHp -= this.getDmg();
+        if(manual) this.sound(200);
+        if(this.curHp <= 0) {
+            this.sound(400);
+            // RECOMPENSA DE 50 NO INÍCIO COMO VOCÊ PEDIU
+            this.gold += (50 * Math.pow(1.5, this.pIdx));
+            this.maxHp *= 1.35;
+            this.curHp = this.maxHp;
+            this.save(); this.sync();
+        }
+        this.update();
+    },
+
+    update() {
+        document.getElementById('u-gold').innerText = this.f(this.gold);
+        document.getElementById('u-dmg').innerText = this.f(this.getDmg());
+        document.getElementById('hp-bar').style.width = (this.curHp/this.maxHp*100) + "%";
+        document.getElementById('hp-txt').innerText = `${this.f(this.curHp)} / ${this.f(this.maxHp)}`;
+        document.getElementById('p-name').innerText = "Picareta: " + this.picks[this.pIdx];
+    },
+
+    render() {
+        let l = document.getElementById('pick-list'), p = document.getElementById('pet-list');
+        l.innerHTML = ""; p.innerHTML = "";
+        // 50 Picaretas
+        for(let i=0; i<50; i++) {
+            if(i > this.pIdx + 1) break;
+            let cost = 100 * Math.pow(2.2, i);
+            l.innerHTML += `<div class="card"><div><b>${this.picks[i]}</b><br><small>Dano: ${this.f(2*Math.pow(1.8,i))}</small></div><button class="buy-btn" onclick="game.buyP(${i},${cost})" ${this.gold<cost?'disabled':''}>${i<=this.pIdx?'OK':'💰'+this.f(cost)}</button></div>`;
+        }
+        // 50 Pets
+        for(let i=0; i<50; i++) {
+            let cost = 500 * Math.pow(3, i);
+            p.innerHTML += `<div class="card"><div><b>Pet #${i+1} (x${this.myPets[i]||0})</b><br><small>Mult: x${(i*0.5+1).toFixed(1)}</small></div><button class="buy-btn" onclick="game.buyPet(${i},${cost})" ${this.gold<cost?'disabled':''}>💰${this.f(cost)}</button></div>`;
+        }
+    },
+
+    buyP(i, c) { if(this.gold >= c && i > this.pIdx) { this.gold-=c; this.pIdx=i; this.save(); this.render(); this.update(); } },
+    buyPet(i, c) { if(this.gold >= c) { this.gold-=c; this.myPets[i]=(this.myPets[i]||0)+1; this.save(); this.render(); this.update(); } },
+
+    tab(id, b) {
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(n=>n.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); b.classList.add('active');
+        this.render();
+    },
+
+    toggleAuto() {
+        clearInterval(this.loop);
+        if(document.getElementById('auto-check').checked) this.loop = setInterval(()=>this.mine(false), 50);
+    },
+
+    save() { localStorage.setItem('save_'+this.nick, JSON.stringify({gold:this.gold, pIdx:this.pIdx, myPets:this.myPets, maxHp:this.maxHp, pass:this.pass})); },
+
+    channel: null, players: {},
+    initNet() {
+        if(ABLY_KEY.includes('SUA')) return;
+        const ably = new Ably.Realtime(ABLY_KEY);
+        this.channel = ably.channels.get('global');
+        this.channel.subscribe('upd', m => {
+            this.players[m.data.n] = m.data.g;
+            let h = "<b>RANKING GLOBAL</b><br>";
+            Object.entries(this.players).sort((a,b)=>b[1]-a[1]).slice(0,10).forEach(([n,g],i)=> h+=`#${i+1} ${n}: 💰${this.f(g)}<br>`);
+            document.getElementById('rank-list').innerHTML = h;
+        });
+        this.channel.subscribe('chat', m => {
+            let c = document.getElementById('chat-box');
+            c.innerHTML += `<div><b>${m.data.n}:</b> ${m.data.t}</div>`;
+            c.scrollTop = c.scrollHeight;
+        });
+        this.sync();
+    },
+    sync() { if(this.channel) this.channel.publish('upd', {n:this.nick, g:this.gold}); },
+    sendChat() { let i = document.getElementById('chat-in'); if(i.value && this.channel) { this.channel.publish('chat', {n:this.nick, t:i.value}); i.value=""; } }
+};
+</script>
+</body>
+</html>

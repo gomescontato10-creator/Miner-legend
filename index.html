@@ -3,221 +3,284 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MINER LEGEND: TRADES & CODES</title>
+    <title>MINER TYCOON: 50 WORLDS</title>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #050508; --p: #12121a; --gold: #ffcc00; --acc: #00ff88; --hp: #ff4444; }
-        * { box-sizing: border-box; font-family: 'Arial', sans-serif; color: #fff; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        #auth { position: fixed; inset: 0; background: #000; z-index: 999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        .in-auth { background: #111; border: 1px solid #333; padding: 12px; border-radius: 8px; margin: 5px; width: 260px; }
-        header { background: var(--p); padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-bottom: 2px solid #333; }
-        .stat { background: #000; padding: 8px; border-radius: 8px; text-align: center; border: 1px solid #222; }
-        .stat b { color: var(--gold); font-size: 18px; display: block; }
-        .auto-zone { background: #1a1a24; padding: 8px; display: flex; justify-content: center; align-items: center; gap: 10px; border-bottom: 1px solid #333; }
-        nav { display: flex; background: #000; border-bottom: 2px solid #222; overflow-x: auto; }
-        .nav-btn { flex: 1; min-width: 80px; padding: 15px 5px; text-align: center; font-size: 10px; font-weight: bold; cursor: pointer; color: #666; }
-        .nav-btn.active { color: var(--acc); border-bottom: 3px solid var(--acc); background: #111; }
-        .main { flex: 1; overflow-y: auto; padding-bottom: 30px; }
-        .tab { display: none; padding: 20px; flex-direction: column; align-items: center; }
+        :root { --bg: #05050a; --card: #101020; --acc: #00ff88; --gold: #ffcc00; --xp: #00ccff; --rb: #ff00ff; }
+        * { box-sizing: border-box; font-family: 'Rajdhani', sans-serif; color: #fff; }
+        body { background: var(--bg); margin: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        
+        header { background: #000; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-bottom: 2px solid var(--acc); }
+        .stat-box { background: #111; padding: 6px; border-radius: 8px; border: 1px solid #333; text-align: center; font-size: 13px; }
+        .online-count { grid-column: span 2; color: var(--acc); font-size: 11px; text-transform: uppercase; }
+
+        .xp-bar-container { grid-column: span 2; background: #000; height: 15px; border-radius: 10px; border: 1px solid #333; overflow: hidden; position: relative; }
+        .xp-fill { height: 100%; background: var(--xp); width: 0%; transition: 0.3s; }
+
+        .main { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 90px; }
+        .tab { display: none; width: 100%; flex-direction: column; }
         .tab.active { display: flex; }
-        .rock { width: 130px; height: 130px; background: #4e342e; border-radius: 30px; border: 4px solid #222; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 50px; box-shadow: 0 8px 0 #000; transition: 0.05s; }
-        .rock:active { transform: translateY(4px); box-shadow: 0 4px 0 #000; }
-        .hp-box { width: 100%; max-width: 280px; height: 20px; background: #000; border-radius: 10px; border: 1px solid #444; overflow: hidden; margin-top: 15px; position: relative; }
-        .hp-bar { height: 100%; background: var(--hp); transition: width 0.05s; }
-        .hp-txt { position: absolute; inset: 0; text-align: center; font-size: 12px; line-height: 18px; font-weight: bold; }
-        .card { width: 100%; max-width: 400px; background: var(--p); padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; }
-        .buy-btn { background: var(--acc); color: #000; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
-        .buy-btn:disabled { background: #333; color: #777; }
-        #chat-box { width: 100%; height: 150px; background: #000; padding: 10px; overflow-y: auto; border: 1px solid #222; border-radius: 8px; margin-bottom: 8px; font-size: 12px; }
-        .rank-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #222; width: 100%; }
-        .trade-btn { background: #0088ff; color: #fff; border: none; padding: 5px 8px; border-radius: 5px; font-size: 10px; }
+
+        /* Mundos e Upgrades */
+        .card { background: var(--card); border: 1px solid #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .locked { opacity: 0.5; filter: grayscale(1); }
+
+        /* Ovos */
+        .egg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .egg-item { background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; text-align: center; }
+        .egg-item.owned { border-color: var(--acc); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+
+        .btn { background: var(--acc); color: #000; font-weight: bold; cursor: pointer; border: none; padding: 10px; border-radius: 5px; }
+        input { background: #111; border: 1px solid #333; padding: 12px; width: 100%; margin: 5px 0; color: #fff; border-radius: 8px; }
+        
+        nav { display: flex; background: #000; height: 65px; position: fixed; bottom: 0; width: 100%; border-top: 2px solid #222; }
+        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #444; }
+        .nav-item.active { color: var(--acc); }
+
+        #chat-box { height: 150px; background: #000; border: 1px solid #222; overflow-y: auto; padding: 10px; font-size: 13px; border-radius: 8px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div id="auth">
-    <h1 style="color:var(--gold)">MINER LEGEND</h1>
-    <input type="text" id="user" class="in-auth" placeholder="Nick">
-    <input type="password" id="pass" class="in-auth" placeholder="Senha">
-    <button class="buy-btn" style="width:260px; margin-top:10px;" onclick="game.login()">ENTRAR</button>
+<div id="auth-screen">
+    <h1 style="color: var(--acc); font-family: 'Orbitron';">MINER 50W</h1>
+    <input id="auth-user" placeholder="Usuário">
+    <input id="auth-pass" type="password" placeholder="Senha">
+    <button class="btn" style="width: 200px" onclick="game.login()">ENTRAR NO JOGO</button>
 </div>
 
 <header>
-    <div class="stat"><small>OURO</small><b id="u-gold">0</b></div>
-    <div class="stat"><small>DANO</small><b id="u-dmg">1</b></div>
+    <div class="stat-box online-count">🟢 ONLINE: <span id="online-total">1</span></div>
+    <div class="stat-box">💰 <b id="h-gold">0</b></div>
+    <div class="stat-box">🎒 <b id="h-bag">0</b></div>
+    <div class="xp-bar-container">
+        <div id="xp-fill" class="xp-fill"></div>
+        <div style="position: absolute; width:100%; text-align:center; font-size:10px; top:0;">LV <span id="h-lv">1</span></div>
+    </div>
 </header>
 
-<div class="auto-zone">
-    <label style="font-size: 11px; color: var(--acc);"><input type="checkbox" id="auto-check" onchange="game.toggleAuto()"> AUTO CLICKER</label>
-</div>
-
-<nav>
-    <div class="nav-btn active" onclick="game.tab('mina', this)">MINA</div>
-    <div class="nav-btn" onclick="game.tab('loja', this)">LOJA</div>
-    <div class="nav-btn" onclick="game.tab('pets', this)">PETS</div>
-    <div class="nav-btn" onclick="game.tab('codes', this)">CÓDIGOS</div>
-    <div class="nav-btn" onclick="game.tab('rank', this)">RANK</div>
-</nav>
-
 <div class="main">
-    <div id="mina" class="tab active">
-        <h3 id="p-name" style="margin:0; color:var(--acc)">...</h3>
-        <div class="rock" onclick="game.mine(true)">⛏️</div>
-        <div class="hp-box"><div id="hp-bar" class="hp-bar"></div><div id="hp-txt" class="hp-txt">0/0</div></div>
+    <div id="t-mina" class="tab active">
+        <center>
+            <h3 id="w-name" style="color: var(--xp)">MUNDO 1</h3>
+            <div style="font-size: 80px; margin: 20px; cursor: pointer;" onclick="game.mine()">⛏️</div>
+            <button class="btn" style="background:var(--gold); width: 80%; font-size: 18px;" onclick="game.sell()">VENDER (+$<span id="sell-val">0</span>)</button>
+            <div style="margin-top:20px;">
+                <label><input type="checkbox" id="auto-click" onchange="game.toggleAuto()"> AUTO-MINER</label>
+            </div>
+        </center>
     </div>
 
-    <div id="loja" class="tab"><div id="pick-list" style="width:100%"></div></div>
-    <div id="pets" class="tab"><div id="pet-list" style="width:100%"></div></div>
-
-    <div id="codes" class="tab">
-        <h3>RESGATAR CÓDIGO</h3>
-        <input type="text" id="code-in" class="in-auth" placeholder="Digite aqui...">
-        <button class="buy-btn" onclick="game.useCode()">RESGATAR</button>
+    <div id="t-worlds" class="tab">
+        <h3>🌍 VIAJAR (50 MUNDOS)</h3>
+        <div id="world-list"></div>
     </div>
 
-    <div id="rank" class="tab">
-        <div id="rank-list" style="width:100%; background:#111; border-radius:8px; margin-bottom:10px;"></div>
+    <div id="t-upgrades" class="tab">
+        <h3>⚡ MELHORIAS</h3>
+        <div class="card">
+            <div>
+                <b>Boost de XP</b><br>
+                <small>Ganha mais XP por clique</small>
+            </div>
+            <button class="btn" id="btn-up-xp" onclick="game.buyXpUp()">UP: $1.0k</button>
+        </div>
+        <div class="card">
+            <div>
+                <b>Velocidade Auto</b><br>
+                <small id="auto-info">Atual: 1.0s</small>
+            </div>
+            <button class="btn" id="btn-up-speed" onclick="game.buySpeedUp()">UP: $5.0k</button>
+        </div>
+    </div>
+
+    <div id="t-eggs" class="tab">
+        <div style="display: flex; justify-content: space-between;">
+            <h3>🥚 OVOS</h3>
+            <span id="h-multi" style="color:var(--acc)">Multi: 1x</span>
+        </div>
+        <div class="egg-grid" id="egg-grid"></div>
+    </div>
+
+    <div id="t-social" class="tab">
+        <h3>💬 CHAT & RANKING</h3>
         <div id="chat-box"></div>
-        <div style="display:flex; gap:5px; width:100%;">
-            <input type="text" id="chat-in" placeholder="Mensagem..." style="flex:1; background:#000; border:1px solid #333; padding:10px; border-radius:5px;">
-            <button class="buy-btn" onclick="game.sendChat()">OK</button>
+        <div style="display:flex; gap:5px">
+            <input id="chat-in" placeholder="Mensagem...">
+            <button class="btn" onclick="game.sendChat()">OK</button>
         </div>
     </div>
 </div>
 
+<nav>
+    <div class="nav-item active" onclick="game.tab('t-mina', this)">⛏️</div>
+    <div class="nav-item" onclick="game.tab('t-worlds', this)">🌍</div>
+    <div class="nav-item" onclick="game.tab('t-upgrades', this)">⚡</div>
+    <div class="nav-item" onclick="game.tab('t-eggs', this)">🥚</div>
+    <div class="nav-item" onclick="game.tab('t-social', this)">💬</div>
+</nav>
+
 <script>
 const ABLY_KEY = 'wpgTTw.ROsKoQ:3G5iFq9cMkZppCZ4aicBOwDhAGs69lV0Egd55FistlQ';
+const ably = new Ably.Realtime(ABLY_KEY);
+const channel = ably.channels.get('global-miner');
 
 const game = {
-    gold: 0, pIdx: 0, myPets: {}, curHp: 10, maxHp: 10, nick: "", usedCodes: [],
-    suffixes: ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"],
-    picks: ["Madeira", "Pedra", "Ferro", "Aço", "Ouro", "Platina", "Esmeralda", "Diamante", "Rubi", "Obsidiana", "Mithril", "Adamantio", "Netherite", "Vibranium", "Estelar", "Solar", "Lunar", "Vazio", "Abissal", "Celestial", "Divina", "Eterna", "Infinitum", "Quantum", "Galática", "Nebulosa", "Mística", "Rúnica", "Ancestral", "Titânica", "Vulcânica", "Glacial", "Relâmpago", "Dragão", "Fênix", "Caos", "Luz", "Sombra", "Destruição", "Criação", "Realidade", "Tempo", "Espaço", "Multiverso", "Omni", "Deus", "Zênite", "Final", "Infinito", "Lendária"],
+    user: '', gold: 0, bag: 0, lv: 1, xp: 0, multi: 1, xpMulti: 1, autoSpeed: 1000,
+    curWorld: 0,
+    suffixes: {'k':1e3,'M':1e6,'B':1e9,'T':1e12,'Qa':1e15,'Qi':1e18,'Sx':1e21,'Sp':1e24,'Oc':1e27},
+
+    init() {
+        this.worlds = Array.from({length: 50}, (_, i) => ({
+            n: `Mundo ${i+1}`,
+            req: i * 10, // Cada mundo requer +10 levels
+            mult: Math.pow(2.5, i)
+        }));
+        this.renderWorlds();
+        this.renderEggs();
+        this.setupAbly();
+    },
 
     f(n) {
-        if (n < 1000) return Math.floor(n);
-        let e = Math.floor(Math.log10(n) / 3);
-        return (n / Math.pow(1000, e)).toFixed(1) + this.suffixes[e];
+        if(n < 1000) return Math.floor(n);
+        let keys = Object.keys(this.suffixes);
+        let i = Math.floor(Math.log10(n)/3)-1;
+        return (n/this.suffixes[keys[i]]).toFixed(2) + keys[i];
     },
 
     login() {
-        this.nick = document.getElementById('user').value;
-        if(!this.nick) return;
-        let s = JSON.parse(localStorage.getItem('save_'+this.nick));
-        if(s) { this.gold=s.gold; this.pIdx=s.pIdx; this.myPets=s.myPets||{}; this.maxHp=s.maxHp; this.usedCodes=s.usedCodes||[]; }
-        document.getElementById('auth').style.display='none';
-        this.initNet(); this.update(); this.render();
+        this.user = document.getElementById('auth-user').value.trim();
+        if(!this.user) return alert("Nome obrigatório!");
+        document.getElementById('auth-screen').style.display = 'none';
+        channel.presence.enter({ user: this.user });
+        this.update();
     },
 
-    getDmg() {
-        let d = 10 * Math.pow(2.0, this.pIdx);
-        let m = 1;
-        Object.keys(this.myPets).forEach(i => {
-            // Se for o pet do código 67 (índice 99) ele dá 10x
-            let mult = (i == 99) ? 10 : (parseInt(i) + 2);
-            m += mult * this.myPets[i];
+    setupAbly() {
+        channel.subscribe('chat', (m) => {
+            const box = document.getElementById('chat-box');
+            box.innerHTML += `<div><b style="color:var(--acc)">${m.data.user}:</b> ${m.data.msg}</div>`;
+            box.scrollTop = box.scrollHeight;
         });
-        return d * m;
+        channel.presence.subscribe(() => {
+            channel.presence.get((err, members) => {
+                document.getElementById('online-total').innerText = members.length;
+            });
+        });
     },
 
-    mine(manual) {
-        this.curHp -= this.getDmg();
-        if(this.curHp <= 0) {
-            this.gold += (60 * Math.pow(2.0, this.pIdx));
-            this.maxHp *= 1.10;
-            this.curHp = this.maxHp;
-            this.save(); this.sync();
+    sendChat() {
+        let inp = document.getElementById('chat-in');
+        if(!inp.value) return;
+        channel.publish('chat', { user: this.user, msg: inp.value });
+        inp.value = "";
+    },
+
+    mine() {
+        this.bag += 1;
+        this.xp += 5 * this.xpMulti;
+        let req = 100 * Math.pow(1.3, this.lv);
+        if(this.xp >= req) {
+            this.lv++;
+            this.xp = 0;
+            this.renderWorlds();
         }
         this.update();
     },
 
-    useCode() {
-        let val = document.getElementById('code-in').value;
-        if(val === "67" && !this.usedCodes.includes("67")) {
-            this.myPets[99] = (this.myPets[99] || 0) + 1; // Pet 10x
-            this.usedCodes.push("67");
-            alert("CÓDIGO ACEITO! Você ganhou um Pet Lendário 10x!");
-            this.save(); this.render(); this.update();
-        } else {
-            alert("Código inválido ou já usado!");
-        }
-        document.getElementById('code-in').value = "";
+    sell() {
+        let val = this.bag * 100 * this.worlds[this.curWorld].mult * this.multi;
+        this.gold += val;
+        this.bag = 0;
+        this.update();
     },
 
-    trade(target) {
-        let amount = parseFloat(prompt(`Quanto ouro enviar para ${target}?`));
-        if(amount > 0 && this.gold >= amount) {
-            this.gold -= amount;
-            this.channel.publish('trade', {from: this.nick, to: target, val: amount});
-            this.save(); this.update();
-            alert(`Você enviou ${this.f(amount)} de ouro!`);
+    renderWorlds() {
+        document.getElementById('world-list').innerHTML = this.worlds.map((w, i) => {
+            let locked = this.lv < w.req;
+            return `
+                <div class="card ${locked ? 'locked' : ''}">
+                    <span><b>${w.n}</b><br><small>Requer Lv ${w.req}</small></span>
+                    <button class="btn" onclick="game.travel(${i})" ${locked ? 'disabled' : ''}>${locked ? '🔒' : 'VIAJAR'}</button>
+                </div>
+            `;
+        }).join('');
+    },
+
+    travel(i) { this.curWorld = i; this.tab('t-mina', document.querySelectorAll('.nav-item')[0]); this.update(); },
+
+    renderEggs() {
+        let h = "";
+        for(let i=1; i<=60; i++) {
+            let cost = 5000 * Math.pow(1.8, i); // Escala de preço de jogo tycoon
+            h += `<div class="egg-item" id="egg-${i}">
+                <span onclick="game.buyEgg(${i}, ${cost})" style="cursor:pointer; font-size:20px">🥚</span>
+                <div style="font-size:10px; color:var(--gold)">${this.f(cost)}</div>
+            </div>`;
+        }
+        document.getElementById('egg-grid').innerHTML = h;
+    },
+
+    buyEgg(i, cost) {
+        if(this.gold >= cost && !document.getElementById(`egg-${i}`).classList.contains('owned')) {
+            this.gold -= cost;
+            this.multi += (i * 0.5);
+            document.getElementById(`egg-${i}`).classList.add('owned');
+            this.update();
+        }
+    },
+
+    buyXpUp() {
+        let cost = 1000 * Math.pow(2.5, this.xpMulti);
+        if(this.gold >= cost) {
+            this.gold -= cost;
+            this.xpMulti += 1;
+            document.getElementById('btn-up-xp').innerText = `UP: $${this.f(1000 * Math.pow(2.5, this.xpMulti))}`;
+            this.update();
+        }
+    },
+
+    buySpeedUp() {
+        let cost = 5000 * Math.pow(3, (1000 - this.autoSpeed)/100);
+        if(this.gold >= cost && this.autoSpeed > 100) {
+            this.gold -= cost;
+            this.autoSpeed -= 100;
+            document.getElementById('auto-info').innerText = `Atual: ${(this.autoSpeed/1000).toFixed(1)}s`;
+            this.update();
+        }
+    },
+
+    toggleAuto() {
+        clearInterval(this.loop);
+        if(document.getElementById('auto-click').checked) {
+            this.loop = setInterval(() => this.mine(), this.autoSpeed);
         }
     },
 
     update() {
-        document.getElementById('u-gold').innerText = this.f(this.gold);
-        document.getElementById('u-dmg').innerText = this.f(this.getDmg());
-        document.getElementById('hp-bar').style.width = (this.curHp/this.maxHp*100) + "%";
-        document.getElementById('hp-txt').innerText = `${this.f(this.curHp)} / ${this.f(this.maxHp)}`;
-        document.getElementById('p-name').innerText = "Picareta: " + this.picks[this.pIdx];
+        document.getElementById('h-gold').innerText = this.f(this.gold);
+        document.getElementById('h-bag').innerText = this.bag;
+        document.getElementById('h-lv').innerText = this.lv;
+        document.getElementById('h-multi').innerText = `Multi: ${this.multi.toFixed(1)}x`;
+        document.getElementById('w-name').innerText = this.worlds[this.curWorld].n;
+        document.getElementById('sell-val').innerText = this.f(this.bag * 100 * this.worlds[this.curWorld].mult * this.multi);
+        
+        let req = 100 * Math.pow(1.3, this.lv);
+        document.getElementById('xp-fill').style.width = (this.xp/req*100) + "%";
     },
 
-    render() {
-        let l = document.getElementById('pick-list'), p = document.getElementById('pet-list');
-        l.innerHTML = ""; p.innerHTML = "";
-        for(let i=0; i<=this.pIdx+1; i++) {
-            let cost = 100 * Math.pow(2.5, i);
-            l.innerHTML += `<div class="card"><div><b>${this.picks[i]}</b><br><small>Dano: ${this.f(10*Math.pow(2.0,i))}</small></div><button class="buy-btn" onclick="game.buyP(${i},${cost})" ${this.gold<cost?'disabled':''}>${i<=this.pIdx?'OK':'💰'+this.f(cost)}</button></div>`;
-        }
-        // Exibir Pet do Código se tiver
-        if(this.myPets[99]) {
-            p.innerHTML += `<div class="card" style="border-color:gold"><div><b>PET LENDÁRIO (Cód 67)</b><br><small>Bônus: x10.0</small></div><span>Qtd: ${this.myPets[99]}</span></div>`;
-        }
-        for(let i=0; i<10; i++) {
-            let cost = 500 * Math.pow(4, i);
-            p.innerHTML += `<div class="card"><div><b>Pet #${i+1}</b><br><small>Mult: x${i+2}</small></div><button class="buy-btn" onclick="game.buyPet(${i},${cost})" ${this.gold<cost?'disabled':''}>💰${this.f(cost)}</button></div>`;
-        }
-    },
-
-    buyP(i, c) { if(this.gold>=c && i>this.pIdx){this.gold-=c; this.pIdx=i; this.save(); this.render(); this.update();}},
-    buyPet(i, c) { if(this.gold>=c){this.gold-=c; this.myPets[i]=(this.myPets[i]||0)+1; this.save(); this.render(); this.update();}},
-    tab(id, b) {
-        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(n=>n.classList.remove('active'));
-        document.getElementById(id).classList.add('active'); b.classList.add('active');
-    },
-    toggleAuto() { clearInterval(this.loop); if(document.getElementById('auto-check').checked) this.loop=setInterval(()=>this.mine(false), 40); },
-    save() { localStorage.setItem('save_'+this.nick, JSON.stringify({gold:this.gold, pIdx:this.pIdx, myPets:this.myPets, maxHp:this.maxHp, usedCodes:this.usedCodes})); },
-    
-    channel: null, players: {},
-    initNet() {
-        const ably = new Ably.Realtime(ABLY_KEY);
-        this.channel = ably.channels.get('global');
-        this.channel.subscribe('upd', m => {
-            this.players[m.data.n] = m.data.g;
-            let h = "";
-            Object.entries(this.players).sort((a,b)=>b[1]-a[1]).forEach(([n,g])=>{
-                h += `<div class="rank-item"><span>${n}: 💰${this.f(g)}</span> ${n!=this.nick?`<button class="trade-btn" onclick="game.trade('${n}')">Trocar</button>`:''}</div>`;
-            });
-            document.getElementById('rank-list').innerHTML = h;
-        });
-        this.channel.subscribe('trade', m => {
-            if(m.data.to === this.nick) {
-                this.gold += m.data.val;
-                alert(`Você recebeu ${this.f(m.data.val)} de ouro de ${m.data.from}!`);
-                this.save(); this.update();
-            }
-        });
-        this.channel.subscribe('chat', m => {
-            let c = document.getElementById('chat-box');
-            c.innerHTML += `<div><b>${m.data.n}:</b> ${m.data.t}</div>`;
-            c.scrollTop = c.scrollHeight;
-        });
-        this.sync();
-    },
-    sync() { if(this.channel) this.channel.publish('upd', {n:this.nick, g:this.gold}); },
-    sendChat() { let i=document.getElementById('chat-in'); if(i.value && this.channel){this.channel.publish('chat',{n:this.nick,t:i.value}); i.value="";}}
+    tab(id, btn) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+    }
 };
+
+game.init();
 </script>
 </body>
 </html>
